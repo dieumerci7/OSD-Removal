@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 from typing import Union
+from multiprocessing import Pool
+from functools import partial
 
 
 class OSDRemover:
@@ -135,7 +137,7 @@ class OSDRemover:
         return res
 
 
-    def remove_OSD(self, video) -> list:
+    def remove_OSD_quick(self, video) -> list:
         ''' remove OSD from a given video (path of list of frames) '''
         if not isinstance(video, np.ndarray):
             video = self.read_video(video)
@@ -146,6 +148,35 @@ class OSDRemover:
         osd_mask = self._detect_osd_edges(mean_frame)
         # remove osd
         clean_video = list()
+
+        # with Pool(processes=4) as pool:
+        #     args_list = [(frame, osd_mask) for frame in video]
+        #     partial_inpaint = partial(self._inpaint_OSD, mask=osd_mask)
+        #     clean_video = pool.map(partial_inpaint, args_list)
+
+        with Pool(processes=4) as pool:
+            args_list = [(self, frame, osd_mask) for frame in video]
+            clean_video = pool.starmap(OSDRemover._inpaint_OSD, args_list)
+            pool.close()
+            pool.join()
+
+        # for frame in tqdm(video):
+        #     clean_frame = self._inpaint_OSD(frame, osd_mask)
+        #     clean_video.append(clean_frame)
+        return clean_video
+
+    def remove_OSD(self, video) -> list:
+        ''' remove OSD from a given video (path of list of frames) '''
+        if not isinstance(video, np.ndarray):
+            video = self.read_video(video)
+
+        # calculate mean frame on a sample of frames
+        mean_frame = self._mean_frame(video)
+        # calculate osd mask
+        osd_mask = self._detect_osd_edges(mean_frame)
+        # remove osd
+        clean_video = list()
+
         for frame in tqdm(video):
             clean_frame = self._inpaint_OSD(frame, osd_mask)
             clean_video.append(clean_frame)
