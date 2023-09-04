@@ -1,28 +1,16 @@
-import cv2
 import click
-
-
-def read_video(path:str) -> list:
-    video_cap = cv2.VideoCapture(path)
-
-    if not video_cap.isOpened():
-        raise ValueError("Could not open video file")
-
-    frames = list()
-    while True:
-        ret, frame = video_cap.read()
-        if not ret:
-            break 
-        frames.append(frame)
-    return frames
+from osd import OSDRemover
 
 
 @click.command(help="")
 @click.option("--video-path", type=str, help="testing video path")
-def main(video_path):
+@click.option("--video-output-path", type=str, 
+    default='output.mp4', help="path to save resulting video")
+def main(video_path, video_output_path):
 
-    video = read_video(video_path)
-
+    osd = OSDRemover()
+    clean_video = osd.remove_OSD(video_path)
+    osd.write_video(clean_video, video_output_path)
 
 
 if __name__ == '__main__':
