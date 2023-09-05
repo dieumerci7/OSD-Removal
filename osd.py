@@ -149,20 +149,12 @@ class OSDRemover:
         # remove osd
         clean_video = list()
 
-        # with Pool(processes=4) as pool:
-        #     args_list = [(frame, osd_mask) for frame in video]
-        #     partial_inpaint = partial(self._inpaint_OSD, mask=osd_mask)
-        #     clean_video = pool.map(partial_inpaint, args_list)
-
         with Pool(processes=4) as pool:
             args_list = [(self, frame, osd_mask) for frame in video]
             clean_video = pool.starmap(OSDRemover._inpaint_OSD, args_list)
             pool.close()
             pool.join()
 
-        # for frame in tqdm(video):
-        #     clean_frame = self._inpaint_OSD(frame, osd_mask)
-        #     clean_video.append(clean_frame)
         return clean_video
 
     def remove_OSD(self, video) -> list:
